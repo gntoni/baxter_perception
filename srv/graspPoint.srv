@@ -1,0 +1,4 @@
+sensor_msgs/Image edges
+sensor_msgs/Image depth
+---
+geometry_msgs/Point graspPoint

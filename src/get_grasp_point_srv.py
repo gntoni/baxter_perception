@@ -43,13 +43,20 @@ class Cget_grasp_service(object):
 
     def handle_get_grasp_point(self, req):
         print "[get_grasp_point_srv] Grasp point calculation request received."
-        edge_image = self.bridge.imgmsg_to_cv2(req.edges)  # ros msg to img
         depth_image = self.bridge.imgmsg_to_cv2(req.depth)  # ros msg to img
-        imH, imW = depth_image.shape
+        depth_image8b = np.copy(depth_image)
+        depth_image8b[depth_image8b == 0] = depth_image8b.max()
+        depth_image8b -= depth_image8b.min()
+        depth_image8b[depth_image8b > 300] = 300
+        depth_image8b = cv2.convertScaleAbs(depth_image8b)
+        edge_image = cv2.medianBlur(depth_image8b, 5)
+        edge_image = cv2.Canny(edge_image, 50, 200)
+
+        imH, imW = depth_image8b.shape
 
         p = unlabeled_patching(
                                         edge_image.reshape((1, imH, imW)),
-                                        depth_image.reshape((1, imH, imW))
+                                        depth_image8b.reshape((1, imH, imW))
                                         )
         pred = self.net.test(np.array(p).reshape((-1, 1, PATCH_SIZE[0], PATCH_SIZE[1])))
         pred = np.argmax(pred, axis=1)

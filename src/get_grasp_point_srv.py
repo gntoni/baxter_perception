@@ -25,7 +25,7 @@ COLORS = ['b', 'g', 'r', 'c', 'm', 'y']
 
 PATCH_SIZE = (50, 50)
 
-MODEL = "/home/toni/Data/bagsTowels/model_350_epoch.npy"  # TODO get from param server
+MODEL = "/home/toni/Code/clothEdgePatchDetect/models/model_350_epoch.npy"  # TODO get from param server
 
 
 class Cget_grasp_service(object):

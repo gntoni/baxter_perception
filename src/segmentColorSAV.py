@@ -40,6 +40,8 @@ class edgeFilter:
         self.HueL = 0
         self.Sat    = 0
         self.Val    = 0
+        self.DistMin = 0
+        self.DistMax = 0
 
         self.srv = Server(baxter_perceptionConfig, self.callback)
 
@@ -50,6 +52,8 @@ class edgeFilter:
         self.HueL = config["HueL"]
         self.Sat    = config["Sat"]
         self.Val    = config["Val"]
+        self.DistMin = config["DistMin"]
+        self.DistMax = config["DistMax"]
         rospy.logdebug("""Reconfigure Request: {HueH}, {HueL},\ 
               {Sat}, {Val}""".format(**config))
         return config
@@ -70,7 +74,7 @@ class edgeFilter:
 
         imdepth   = self.bridge.imgmsg_to_cv2(depth)        # ros msg to img
         fDepImg = imdepth  # temp testvar
-        depthMask = bytescale(imdepth,600,900)#[:,300:600]  # bytescale and crop
+        depthMask = bytescale(imdepth,self.DistMin,self.DistMax)#[:,300:600]  # bytescale and crop
         depthMask[depthMask==depthMask.max()]=depthMask.min()
         depthMask = depthMask > 1                           # binarize
         #depthMask = binary_fill_holes(depthMask.astype(np.uint8),structure=np.ones((1,4))).astype(np.uint8) 

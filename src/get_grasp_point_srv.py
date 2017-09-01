@@ -25,8 +25,9 @@ COLORS = ['b', 'g', 'r', 'c', 'm', 'y']
 
 PATCH_SIZE = (50, 50)
 
-MODEL = "/home/toni/Code/clothEdgePatchDetect/models/model_350_epoch.npy"  # TODO get from param server
-
+MODEL = "/home/toni/Data/uTrain/model_11_epoch.npy"  # TODO get from param server
+DATA_AVG = 56.1639093364
+DATA_STD = 190.057123159
 
 class Cget_grasp_service(object):
     """
@@ -47,16 +48,24 @@ class Cget_grasp_service(object):
         depth_image8b = np.copy(depth_image)
         depth_image8b[depth_image8b == 0] = depth_image8b.max()
         depth_image8b -= depth_image8b.min()
-        depth_image8b[depth_image8b > 300] = 300
+        depth_image8b += 5
+        depth_image8b[depth_image8b > 320] = 0
+        mask = depth_image8b==0
         depth_image8b = cv2.convertScaleAbs(depth_image8b)
         edge_image = cv2.medianBlur(depth_image8b, 5)
         edge_image = cv2.Canny(edge_image, 50, 200)
+        #depth_image8b = depth_image8b.astype("float32")
+        #depth_image8b -= DATA_AVG
+        #depth_image8b /= DATA_STD
+        imdepth = depth_image.astype("float32")
+        imdepth[mask] = 0
+        imdepth = (imdepth - DATA_AVG) / DATA_STD
 
         imH, imW = depth_image8b.shape
 
         p = unlabeled_patching(
                                         edge_image.reshape((1, imH, imW)),
-                                        depth_image8b.reshape((1, imH, imW))
+                                        imdepth.reshape((1, imH, imW))
                                         )
         pred = self.net.test(np.array(p).reshape((-1, 1, PATCH_SIZE[0], PATCH_SIZE[1])))
         pred = np.argmax(pred, axis=1)
@@ -77,11 +86,15 @@ class Cget_grasp_service(object):
         # Find vertical derivative (horizontal edges)
         prewitt_im = convolve(img_as_float(pred_image), HPREWITT_WEIGHTS)
 
+        np.save("ouim",pred_image)
+        np.save("oucontorns",contours)
+        np.save("ouprew",prewitt_im)
+
         horizontality = []
         indices = []
         print "len indices: " + str(len(indices))
         for index, contour in enumerate(contours):
-            if cv2.arcLength(contour.astype("float32"), False) > 70:
+            if cv2.arcLength(contour.astype("float32"), False) > 20:
                 print "contour: " + str(cv2.arcLength(contour.astype("float32"), False))
                 a = prewitt_im[contour[:, 0].astype(int), contour[:, 1].astype(int)]
                 b = sum(a) / float(len(a))
